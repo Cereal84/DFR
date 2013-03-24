@@ -1,0 +1,28 @@
+#!/bin/bash
+
+cp ../src_DFR/DFR ../bin/DFR/
+cp ../src_FS/FS ../bin/FS/
+cp ../src_CL/CL ../bin/CL/
+
+echo TEST 2
+echo
+
+echo inserisci la porta base
+read dfr_fs
+
+dfr_cl=$(($dfr_fs+1000))
+fs_cl=$(($dfr_fs+2000))
+
+echo $s
+./../bin/DFR/DFR $dfr_fs $dfr_cl &
+sleep 2
+for i in `seq 1 2`;
+do
+    sleep 0.1
+    ./../bin/CL/CL2 127.0.0.1 $dfr_cl 2 pippo.txt $i&
+done   
+
+./../bin/FS/FS 127.0.0.1 $dfr_fs 127.0.0.1 $fs_cl 6 pippo.txt 2&
+
+
+

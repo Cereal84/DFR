@@ -1,0 +1,24 @@
+#!/bin/bash
+
+
+file4 = "file_4.txt"
+file5 = "file_5.txt"
+
+clear
+
+echo TEST 3
+echo
+
+echo inserisci la porta base
+read dfr_fs
+
+dfr_cl=$(($dfr_fs+1000))
+fs_cl=$(($dfr_fs+2000))
+
+
+./DFR/DFR $dfr_fs $dfr_cl &
+sleep 1
+
+./FS/FS 127.0.0.1 $dfr_fs 127.0.0.1 $fs_cl 10 file_1.txt 2 file_2.txt 2 file_common.txt 2&
+
+exit 0

@@ -1,0 +1,27 @@
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <string>
+
+using namespace std;
+
+/** Questo file contiene le funzioni che permettono l'invio e 
+ *  la ricezione di un messaggio tramite i socket
+ */
+
+
+/** Funzione per l'invio di un messaggio tramite socket
+ *  \param sd socket su cui mandare il messaggio
+ *  \param msg messaggio da inviare
+ *  \return -1 se c'è un errore 0 se è andato tutto bene
+ */
+int send_msg(int sd, string msg);
+
+/** Funzione per la ricezione di un messaggio tramite socket
+ *  \param sd socket su cui ricevere il messaggio
+ *  \param msg stringa dove salvare il messaggio ricevuto
+ *  \return -1 se c'è un errore 0 se è andato tutto bene
+ */
+int receive_msg(int sk, string msg);

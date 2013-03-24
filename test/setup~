@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo SETUP
+echo
+
+mkdir DFR
+mkdir FS
+mkdir CL
+
+echo Creazione cartelle DFR FS e CL completata
+
+cp ../bin/DFR/DFR DFR/
+cp ../bin/FS/FS FS/
+cp ../bin/CL/CL CL/
+
+echo
+echo Copiati i vari "file" eseguibili nelle cartelle per il "test"

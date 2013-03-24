@@ -1,0 +1,54 @@
+/* 
+ * File:   FS.h
+ * Author: Alessandro
+ *
+ * Created on 5 aprile 2010, 1.43
+ */
+
+
+
+#ifndef _FS_H
+#define	_FS_H
+
+#include <map>
+#include <string>
+#include <pthread.h>
+#include <stdlib.h>
+#include "../include/DFR_FS.h"
+#include "../include/comunication.h"
+#include "../include/utility.h"
+#include <iostream>
+#include <sstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+using namespace std;
+
+
+/**
+ * Struttura dati usata dal File Server per memorizzare il numero di client limite
+ * per il file e il numero massimo di client correnti che stanno scaricando il file
+ */
+struct file_info{
+    int current_cl;
+    int max_cl;
+};
+
+/**
+ * Contiene la lista dei file che ha e le relative informazioni
+ */
+map<string, file_info> list_file;
+
+/**
+ * semaforo di mutua esclusione per l'uso di list_file
+ */
+pthread_mutex_t mutex;
+
+void register_file(string, int);
+void unregister_file(string, int);
+bool disconnect(int socket);
+void console(string& ,int, bool&);
+
+#endif	/* _FS_H */
+

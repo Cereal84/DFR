@@ -1,0 +1,22 @@
+#!/bin/bash
+
+echo TEST 1
+echo
+
+
+./../bin/DFR/DFR 5000 6000 &
+sleep 
+./../bin/CL/CL 127.0.0.1 6000 | echo notify pippo.txt file_cl1  &
+./../bin/CL/CL 127.0.0.1 6000 | echo notify pippo.txt file_cl2  &
+./../bin/CL/CL 127.0.0.1 6000 | echo notify pippo.txt file_cl3  &
+sleep
+#./../bin/CL/CL 127.0.0.1 6000 < file_cl  &
+./../bin/FS/FS 127.0.0.1 5001 127.0.0.1 4001 3 | echo register_file pippo.txt 3
+
+#./../bin/FS/FS 127.0.0.1 5000 127.0.0.1 4001 3 < file_fs
+
+#exec &0<1
+#./../bin/FS/FS 127.0.0.1 5001 127.0.0.1 4001 3
+#echo register_file pippo.txt 3
+#echo unregister_file pippo.txt
+#echo disconnect

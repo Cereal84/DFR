@@ -1,0 +1,129 @@
+#include "fs_struct_data.h"
+#include "error_def.h"
+#include <map>
+#include <list>
+#include <pthread.h>
+#include <algorithm>
+#include <pthread.h>
+
+
+
+using namespace std;
+
+struct detail_location{
+ 
+       string ip;
+       int port;
+
+};
+
+/** \struct location 
+ *Descrive le informazioni utili per un file :
+ *  - il puntatore del File Server che lo mantiene
+ *  - un semaforo di condizione per le notifiche 
+ *  - lista di client che stanno effettuando il download del file da quel File Server
+ *  il puntatore al File Server è usato per accedere direttamente alle informazioni
+ *  del file server interessato senza ricorrere alla ricerca dello stesso nella lista di File Server 
+ */
+struct location{
+       Fs* fs;
+
+       ///semaforo condizione
+       pthread_cond_t wait;
+
+       /// numero di client in attesa di una notifica 
+       int num_wait;
+
+       /// lista contenente il socket dei client che hanno fatto richiesta del file al File Server fs
+       list<int> cl_sk;
+
+};
+
+///Repository Class
+/** Questa classe descrive le strutture dati e i metodi di un repository
+  * la struttura e' la seguente :
+  *     - lista di File Server 
+  *     - lista di file disponibili
+  *     - ogni file può essere presente su più File Server   
+  */
+class Repository{
+
+
+     public :
+        /** Lista di File Server
+         *  \see 
+         */
+        Fs_list fs_list;
+   
+        /** Lista di file
+         *  contiene la lista di file registrati dagli FS
+         *  per ogni file abbiamo una lista di location
+         */
+        map< string ,list<location> > file_list;
+
+        ///semaforo per la mutua esclusione
+        pthread_mutex_t mutex;
+
+     public:
+        /// Construttore
+        /** Il repository è inizializzato vuoto
+         */
+        Repository();
+        
+        /// Aggiunge un file al repository
+        /** Aggiunge un file al repository
+         *    - se il file non esiste viene semplicemente aggiunto il file e il puntatore del File Server 
+         *    - se il file esiste viene aggiunta una struttura location riguardante il File Server interessato
+         *  \param file_name nome del file da registrare 
+         *  \param *fs puntatore al File Server che vuole registrare il file
+         */
+        void add_file(string file_name,Fs* fs);
+
+        /// Rimuove un file dal repository
+        /** cerca un file e :
+         *      - rimuove le informazioni sul File Server se il file è mantenuto anche da altri File Server
+         *      - rimuove completamente il file dal repository se il File Server che sta deregistrando il file è l'unico a mantenerlo
+         *  \param file_name nome del file da deregistrare
+         *  \param *fs puntatore del File Server che vuole deregistrare il file
+         *  \return 
+                  ERR_FILE_NOT_REGISTERED se il File Server non aveva registrato il file
+                  ERR_FILE_NOT_EXISTS se il file non è presente nel repository
+                  OK  se il file è stato deregistrato
+         */
+        int remove_file(string file_name, Fs* fs);
+
+
+        /// Cerca un file nel repository e restiruisce dove si trova
+        /** Cerca un file e restituisce un oggetto location con i dati del File Server
+         *  \param file_name nome del file che si vuole cercare
+         *  \param &location \see location
+         *  \return 
+         *        - ERR_FILE_NOT_EXISTS se il file non è presente nel repository
+         *        - ERR_TOO_MANY_CLIENTS se tutti i File Server che mantengono il file hanno raggiunto il limite di client accettati
+         */
+        //int where_is(string file_name, detail_location& location);
+        int where_is(string file_name, std::list<location>::iterator &list_iter);
+
+        /// Aggiunge un File Server nel repository
+        /** Aggiunge le informazioni di un File Server  nella lista di File Server registrati presso il DFR
+         *  \param ip indirizzo ip del File Server
+         *  \param port numero di porta su cui è in ascolto 
+         *  \param maxcl numero massimo di client connessi contemporaneamente sul File Server
+         */
+        void add_file_server(string ip, int port, int maxcl);
+   
+        /** Rimuove un file server dal repository
+         * Rimuove un dato File Server dalla lista
+         * \param ip    indirizzo ip del File Server
+         * \param port  porta del File server
+         * \return -1 non ha trovato il FS, 0 FS eliminato
+         */  
+        int remove_file_server(string ip, int port);
+
+        /**
+         *
+         */
+        int start_file_transfer(string file_name, int sk_client, detail_location& fs);
+        int end_file_transfer(string file_name, int sk_client, detail_location fs);
+
+};

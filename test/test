@@ -1,0 +1,37 @@
+#!/bin/bash
+
+./reset
+
+cp ../bin/DFR/DFR DFR/
+cp ../bin/FS/FS FS/
+cp ../bin/CL/CL CL/
+
+clear
+
+
+
+echo ---------TEST MENU-----------
+echo
+echo "1 - Test :"
+echo "2 - Test :"
+echo
+echo "Insert the number of the test you want run [1/2] : " 
+
+read option
+
+case $option in
+ 
+ "1") 
+  ./script/test1
+ ;;
+ "2") 
+  ./script/test2
+ ;;
+ *)
+   echo "Option unknown"
+ ;;
+
+
+esac
+
+exit 0

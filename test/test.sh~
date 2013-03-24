@@ -1,0 +1,30 @@
+#!/bin/bash
+
+clear
+
+cp ../bin/DFR/DFR DFR/
+cp ../bin/FS/FS FS/
+cp ../bin/CL/CL CL/
+
+echo ---------TEST MENU-----------
+echo
+echo "1 - Test :"
+echo "2 - Test :"
+echo
+echo "scrivere il numero del test che si vuole eseguire :" 
+
+read option
+
+case $option in
+ 
+ "1") 
+  ./test1/test1.sh
+ ;;
+ "2") 
+  
+  ./test2/test2.sh
+ ;;
+
+esac
+
+exit 0

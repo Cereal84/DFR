@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm DFR/DFR
+rm FS/FS

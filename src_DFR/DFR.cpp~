@@ -1,0 +1,86 @@
+
+#include "../include/comunication.h"
+#include "../include/utility.h"
+#include <iostream>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+
+
+int manage_fs(int clnt_sd,char *clnt_addr)
+{   
+    string m="";
+
+    if( receive_msg(clnt_sd, m) == -1)
+           cout<<"ERRORE in ricezione"<<endl; 
+ 
+    if( m == "connect"){                    
+              cout<<"Il File Server "<<clnt_sd<<" ha eseguito la connect"<<endl;                       
+    }/*
+    if(command == "register_file"){
+              cout<<"Il File Server vuole registrare un file"<<endl; 
+    }
+    if(command == "unregister_file"){                    
+              cout<<"Il File Server vuole deregistrare un file"<<endl;                        
+    }*/
+    if(m == "disconnect"){
+              cout<<"Il File Server "<<clnt_sd<<" si e' disconnesso"<<endl;
+              //send_msg(clnt_sd, "ok");
+              return -1;
+     
+              
+    }
+
+    return 0;
+}
+
+
+int main(int argc, char *argv[])
+{
+  //DICHIARAZIONE VARIABILI
+  int srv_sd, clnt_sd, son;
+  int ret, port,len;
+  struct sockaddr_in my_addr, clnt_addr;
+  char *clnt_address;
+  
+  
+  if (argv[1]==NULL){
+         cout<<"Quando avvi il server devi scrivere anche la porta di ascolto secondo questa sintassi:"<<endl; 
+         cout<<"./simple-scpd <porta>"<<endl;  
+         return -1;
+  }
+
+  cout<<"DFR-FS v.0.1"<<endl; ;
+  cout<<"In attesa di connessioni sulla porta "<<argv[1]<<"....."<<endl; 
+  
+  
+  //Convertiamo la argv che contiene il numero di porta in un intero
+  port=atoi(argv[1]);
+
+  srv_sd = init_sd_srv("127.0.0.1", port);
+  while(1){
+       char clnt[15];    
+       //Estraiamo dalla coda una nuova richiesta
+       len = sizeof(clnt_addr);
+       clnt_sd=accept(srv_sd,(struct sockaddr *) &clnt_addr, (socklen_t*)&len);
+       clnt_address=inet_ntoa(clnt_addr.sin_addr);
+       if(clnt_sd==-1){
+         printf("SERVER: E' stato impossibile servire il client %s",inet_ntoa(clnt_addr.sin_addr));
+       }
+       strcpy(clnt,inet_ntoa(clnt_addr.sin_addr));
+       printf("FS %s - %d connesso\n",clnt,clnt_sd);
+       while(1){  
+           if(ManageAndServe(clnt_sd,clnt)==-1) 
+                             break;  
+           getchar(); 
+           
+       }//fine while 
+         close(clnt_sd);
+         return 0;
+      }
+      //else{ //Sezione padre
+            
+      //   close(clnt_sd);
+      // }
+  }

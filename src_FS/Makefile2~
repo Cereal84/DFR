@@ -1,0 +1,22 @@
+CC = g++
+FLAGS = -Wall
+LIB = -lpthread 
+BIN = 
+SOURCE = ../src/
+INCLUDE = ../include/
+FS_OBJECTS = FS_with_console.o $(SOURCE)comunication.o $(SOURCE)utility.o 
+
+FS_with_console : $(FS_OBJECTS)
+	$(CC) $(FLAGS) $(LIB) $(FS_OBJECTS) -o $(BIN)FSConsole
+	rm -f *.o $(SOURCE)*.o
+
+
+FS_with_console.o : FS_with_console.cpp $(SOURCE)utility.o $(SOURCE)comunication.o 
+
+utility.o : $(SOURCE)utility.cpp $(INCLUDE)utility.h $(INCLUDE)message_CL_DFR.h $(INCLUDE)message_FS_DFR.h
+
+comunication.o : $(SOURCE).comunication.cpp $(INCLUDE)comunication.h
+
+clean:
+	rm -f *.o $(SOURCE)*.o 
+

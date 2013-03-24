@@ -1,0 +1,120 @@
+#include "../include/utility.h"
+#include <string.h>
+
+using namespace std;
+
+int init_sd(int port, string ip, sockaddr_in &addr){
+    int sd;
+    
+    memset(&addr, 0, sizeof(sockaddr_in));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    if(inet_pton(AF_INET, ip.c_str(), &addr.sin_addr.s_addr) <= 0) {
+        printf("indirizzo IP non valido\n");
+        return -1;
+    }
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sd < 0) {
+        printf("creazione del socket fallita\n");
+        return -1;
+    }
+    return sd;
+}
+
+/*int init_sd_srv(int port, string ip){
+    sockaddr_in my_addr;
+    int sd;
+    
+    memset(&my_addr, 0, sizeof(sockaddr_in));
+    my_addr.sin_family = AF_INET;
+    my_addr.sin_port = htons(port);
+    if(inet_pton(AF_INET, ip.c_str(), &my_addr.sin_addr.s_addr) <= 0) {
+        printf("indirizzo IP non valido\n");
+        return -1;
+    }
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sd < 0) {
+        printf("creazione del socket fallita\n");
+        return -1;
+    }
+    if(bind(sd, (sockaddr*) &my_addr, sizeof(my_addr)) < 0) {
+        close(sd);
+        printf("impossibile fare il bind\n");
+        return -1;
+    }
+    if(listen(sd, BACKLOG_SIZE) < 0) {
+        close(sd);
+        printf("listen fallita\n"));
+        return -1;
+    }
+    printf("Server in ascolto sulla porta %d \n",port);
+    return sd;
+
+}
+
+
+int init_sd_cl(int port, string ip){
+    sockaddr_in srv_addr;
+    int sd;
+    
+    memset(&srv_addr, 0, sizeof(sockaddr_in));
+    srv_addr.sin_family = AF_INET;
+    srv_addr.sin_port = htons(port);
+    if(inet_pton(AF_INET, ip.c_str(), &srv_addr.sin_addr.s_addr) <= 0) {
+        printf( "indirizzo IP non valido\n");
+        return -1;
+    }
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sd < 0) {
+        printf("creazione del socket fallita\n");
+        return -1;
+    }
+    if(connect(sd, (sockaddr*) &srv_addr, sizeof(srv_addr)) < 0) {
+        printf( "tentativo di connessione fallito\n");
+        close(sd);
+        return -1;
+    }
+    return sd;
+
+}*/
+
+int init_sd_srv(string ip , int port){
+    sockaddr_in my_addr;
+    int sd;
+    
+    sd = init_sd(port, ip , my_addr);
+    if(sd == -1)
+          return sd;    
+
+    if(bind(sd, (sockaddr*) &my_addr, sizeof(my_addr)) < 0) {
+        close(sd);
+        printf("impossibile fare il bind\n");
+        return -1;
+    }
+    if(listen(sd, BACKLOG_LENGTH) < 0) {
+        close(sd);
+        printf("listen fallita\n");
+        return -1;
+    }
+
+    return sd;
+
+}
+
+
+int init_sd_cl(string ip , int port){
+    sockaddr_in srv_addr;
+    int sd;
+
+    sd = init_sd(port, ip, srv_addr);
+    if(sd == -1)
+          return sd;     
+
+    if(connect(sd, (sockaddr*) &srv_addr, sizeof(srv_addr)) < 0) {
+        printf( "tentativo di connessione fallito\n");
+        close(sd);
+        return -1;
+    }
+    return sd;
+
+}

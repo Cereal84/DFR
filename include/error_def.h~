@@ -1,0 +1,11 @@
+
+/** Il seguente file contiene la definizione degli errori che possono presentarsi durante l'esecuzione
+ *  di uno dei comandi che i Client o File Server possono inviare. 
+ *  
+ */
+#define OK 0
+#define ERR_FILE_NOT_REGISTRED -1
+#define ERR_FILE_NOT_EXISTS -2
+#define ERR_TOO_MANY_CLIENTS -3
+#define ERR_NO_TRANSFER -4
+#define ERR_NO_NOTIFICATION -5

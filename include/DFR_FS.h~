@@ -1,0 +1,19 @@
+/** contiene le funzioni per la gestione dei possibili comandi che un File Server può inviare al DFR.
+ *  I possibili comandi sono : \n
+ *         - connect   usato per registrarsi al DFR
+ *         - register-file  registra un dato file nel DFR
+ *         - unregister-file deregistra un dato file dal DFR
+ *         - disconnect  per deregistrarsi dal DFR     
+ */
+
+#include "../include/repository.h"
+#include "../include/comunication.h"
+#include <string>
+
+/**
+ *  \param 
+ */
+int connect(string  ip, int port, int num_maxcl);
+int reg_file(string filename);
+int unreg_file(string filename);
+int disconnect();

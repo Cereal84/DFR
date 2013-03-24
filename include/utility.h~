@@ -1,0 +1,14 @@
+#include <string>
+#include <stdio.h>
+#include <arpa/inet.h>
+using namespace std;
+
+/// lunghezza della coda per il listening
+#define BACKLOG_LENGTH 20
+
+int init_sd(int port, string ip, sockaddr_in &addr);
+int init_sd_srv(string ip , int port);
+int init_sd_cl(string ip, int port);
+
+
+

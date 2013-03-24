@@ -1,0 +1,199 @@
+#include "../include/repository.h"
+
+
+Repository::Repository(){
+     
+      pthread_&mutex_init(&mutex,0);
+      file_list.clear();
+      
+}
+
+void Repository::add_file(string file_name, Fs* fs){
+        struct location loc;
+
+        phtread_&mutex_lock(&mutex);
+        //Se tale entry non esiste la aggiungiamo
+        if(file_list.find(file_name) == file_list.end())
+                   file_list[file_name];
+
+        
+        loc.fs = fs;
+        pthread_cond_init(&loc.wait , 0);
+        loc.num_wait = 0;
+        (file_list.find(file_name)->second).push_back(loc);
+        *fs.add_file(file_name);
+        cout<<"FS "<<fs->ip<<" "<<fs->port<<" ha registrato il file "<<file_name<<endl;
+        phtread_&mutex_unlock(&mutex);
+       
+        return;
+
+}
+
+int Repository::remove_file(string file_name, Fs* fs){
+     
+        phtread_&mutex_lock(&mutex);
+        //Il file non e' presente nel repository
+        if(file_list.find(file_name) == file_list.end()){
+                   phtread_&mutex_unlock(&mutex);
+                   return ERR_FILE_NOT_EXISTS;
+        }
+        
+
+        if(*fs.remove(file_name) == ERR_FILE_NOT_REGISTERED)
+                          return FILE_NOT_REGISTERED;
+
+        std::list<location>::iterator list_iter = (file_list.find(file_name)->second).begin(); 
+        bool found = false;
+        while( list_iter != (file_list.find(file_name)->second).end() ){
+            if (list_iter->fs == fs){
+                   found = true;
+                   break;
+            }
+ 
+            list_iter++;
+        }
+        if(!found){
+             phtread_&mutex_unlock(&mutex);
+             return ERR_FILE_NOT_REGISTRED;
+        }
+        (file_list.find(file_name)->second).erase(list_iter);
+
+        if()
+    
+
+
+        //Se il file non è mantenutoda nessun FS cancello l'indicazione del file
+        if( (file_list.find(file_name)->second).empty() )
+                	file_list.erase(file_name);
+        cout<<"FS "<<fs->ip<<" "<<fs->port<<" ha de-registrato il file "<<file_name<<endl;
+        phtread_&mutex_unlock(&mutex);
+        return 0;
+  
+
+}
+
+
+/*int Repository::where_is(string file_name, detail_location& fs){
+
+        //Il file non e' presente nel repository
+        if(file_list.find(file_name) == file_list.end())
+                   return ERR_FILE_NOT_EXISTS;
+
+        std::list<location>::iterator list_iter = (file_list.find(file_name)->second).begin(); 
+        bool found = false;
+        while( list_iter != (file_list.find(file_name)->second).end() ){
+            if(!list_iter->fs->busy() ){
+                   found = true;
+                   break;
+            }
+ 
+            list_iter++;
+        }
+        if(!found){
+               return ERR_TOO_MANY_CLIENTS;
+        }
+  
+        fs.ip = list_iter->fs->ip;
+        fs.port = list_iter->fs->port;
+        return 0;
+
+
+
+}*/
+
+int Repository::where_is(string file_name, std::list<location>::iterator &item ){
+
+        //Il file non e' presente nel repository
+        if(file_list.find(file_name) == file_list.end()){
+                   phtread_&mutex_unlock(&mutex);    
+                   return ERR_FILE_NOT_EXISTS;
+        }
+
+        std::list<location>::iterator list_iter = (file_list.find(file_name)->second).begin(); 
+        bool found = false;
+        while( list_iter != (file_list.find(file_name)->second).end() ){
+            if(!list_iter->fs->busy() ){
+                   found = true;
+                   break;
+            }
+ 
+            list_iter++;
+        }
+        item = list_iter;
+        if(!found){
+               phtread_&mutex_unlock(&mutex);
+               return ERR_TOO_MANY_CLIENTS;
+        }
+  
+
+        phtread_&mutex_unlock(&mutex);
+        return OK;
+
+}
+
+
+void Repository::add_file_server(string ip, int port, int maxcl){
+       phtread_&mutex_lock(&mutex);
+       fs_list.add_fs(ip, port, maxcl);
+       cout<<"Aggiunto al DFR il File Server "<<ip<<" "<<port<<endl;
+       phtread_&mutex_unlock(&mutex);
+
+}
+
+int Repository::remove_file_server(string ip, int port){
+       //Manca la parte del controllo se posso o no cancellare il FS
+       //può avere ancora trasferimenti pendenti
+       //DA RISCRIVERE quel return così come è  dopo l'unlock non va bene, bisogna portare dentro  il remove_fs
+       phtread_&mutex_lock(&mutex);
+       if(fs_list.remove_fs( ip , port) == -1)
+                      return -1;
+       cout<<"Rimosso dal DFR il File Server "<<ip<<" "<<port<<endl;
+       phtread_&mutex_unlock(&mutex);
+       return 0;
+
+}
+
+int Repository::start_file_transfer(string file_name, int sk_client, detail_location& fs){
+
+    std::list<location>::iterator item;
+    int ret;
+    phtread_&mutex_lock(&mutex);
+    ret=where_is(file_name, item);
+    if(ret != OK){
+               phtread_&mutex_unlock(&mutex);
+               return (ret);
+    }
+
+    item->cl_sk.push_back(sk_client);
+    item->fs->num_cl++;
+    fs.ip = item->fs->ip;
+    fs.port = item->fs->port;
+    phtread_&mutex_unlock(&mutex);
+    return OK;
+
+}
+
+int Repository::end_file_transfer(string file_name, int sk_client, detail_location fs){
+
+    std::list<location>::iterator item = (file_list.find(file_name)->second).begin(); 
+    
+    phtread_&mutex_lock(&mutex);
+    while ( item!= (file_list.find(file_name)->second).end() ) {
+           if ( (item->fs->ip == fs.ip) && (item->fs->port == fs.port) )
+           {
+                 break;
+           }
+           item++;
+    }
+    
+    list<int>::iterator pos = find( item->cl_sk.begin(), item->cl_sk.end(), sk_client);
+    if( pos == item->cl_sk.end())
+    {
+           phtread_&mutex_unlock(&mutex);
+           return ERR_NO_TRANSFER;
+    }    
+    item->cl_sk.remove(sk_client);
+    phtread_&mutex_unlock(&mutex);
+    return OK;
+
+}

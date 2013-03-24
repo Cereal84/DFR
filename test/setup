@@ -1,0 +1,22 @@
+#!/bin/bash
+
+echo
+echo SETUP
+echo
+
+mkdir DFR
+mkdir FS
+mkdir CL
+
+echo DFR, FS and CL directories created
+
+cp ../bin/DFR/DFR DFR/
+cp ../bin/FS/FS FS/
+cp ../bin/CL/CL CL/
+
+echo
+echo The executables files are copied in the directories
+
+echo
+echo Setup completed
+echo

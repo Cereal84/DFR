@@ -1,0 +1,306 @@
+/*
+ * File:   FS.cpp
+ * Author: Alessandro Pischedda
+ *
+ * Created on 19 marzo 2010, 18.45
+ */
+
+#include "../include/FS.h"
+
+int port_fs_srv;
+int maxcl;
+string ip_fs_srv;
+
+void show_help(){
+    cout<<"\nHELP \n\n";
+    cout<<"-) register_file <file_name> <maxclient> \n";
+    cout<<"-) unregister_file <file_name> \n";
+    cout<<"-) disconnect \n";
+    return;
+}
+
+
+
+
+void *bd_cl(void *socket){
+    int cl_sd =  (size_t)socket,ret;
+    string file_name;
+    std::stringstream response;
+    int fd;
+
+    response.str("");
+    receive_msg(cl_sd,file_name);
+
+    pthread_mutex_lock(&mutex);
+
+    //Il file e' presente nel repository ?
+    if(list_file.find(file_name) == list_file.end()){
+
+        pthread_mutex_unlock(&mutex);
+        response<<ERR_FILE_NOT_EXISTS;
+        cout<<"ERR: Il file "<<file_name<<" richiesto dal client "<<cl_sd<<" non esiste"<<endl;
+        send_msg(cl_sd,response.str());
+        close(cl_sd);
+        pthread_exit(NULL);
+    }
+
+    //ci sono troppi client su quel file?
+    if(list_file[file_name].current_cl >= list_file[file_name].max_cl){
+
+        pthread_mutex_unlock(&mutex);
+        response<<ERR_TOO_MANY_CLIENTS;
+        cout<<"ERR: Troppe richieste sul "<<file_name<<" e' impossibile servire il client "<<cl_sd<<endl;
+        send_msg(cl_sd,response.str());
+        close(cl_sd);
+        pthread_exit(NULL);
+    }
+    list_file[file_name].current_cl++;
+    pthread_mutex_unlock(&mutex);
+    fd = open(file_name.c_str(), O_RDONLY);
+    if (fd == -1 ){
+        cout<<"ERR: impossibile aprire il file "<<file_name<<"richiesto dal client "<<cl_sd<<endl;
+        response<<ERROR;
+        send_msg(cl_sd,response.str());
+        close(cl_sd);
+        pthread_exit(NULL);
+    }
+
+    //parte relativa al file
+    struct stat info;
+    int file_size;
+    char *buffer;
+    //ricaviamo la lunghezza del file
+    stat(file_name.c_str(),&info);
+    file_size=info.st_size;
+    buffer = new char[file_size];
+    ret = read(fd, buffer, file_size);
+    if (ret == -1){
+        cout<<"ERR: impossibile aprire il file "<<file_name<<"richiesto dal client "<<cl_sd<<endl;
+        response<<ERROR;
+        send_msg(cl_sd,response.str());
+        close(cl_sd);
+        pthread_exit(NULL);
+    }
+
+    cout<<"CL-> traferimento del file "<<file_name<<" al client "<<cl_sd<<" completato"<<endl;
+    response<<OK<<"|"<<file_size<<"|"<<buffer;
+    send_msg(cl_sd,response.str());
+    
+    pthread_mutex_lock(&mutex);
+    list_file[file_name].current_cl--;
+    pthread_mutex_unlock(&mutex);
+    close(cl_sd);
+    pthread_exit(NULL);
+
+
+}
+
+void *listener_cl(void *socket){
+   int srv_sd =  (size_t)socket;
+   int len,cl_sd,ret;
+   struct sockaddr_in cl_addr;
+   char *cl_address;
+   pthread_t cl_s;
+
+   cout<<"FS Server"<<endl;
+   cout<<"In attesa di connessione da parte di client...."<<endl;
+
+   while(1){
+       char clnt[15];
+       //Estraiamo dalla coda una nuova richiesta
+       len = sizeof(cl_addr);
+       cl_sd=accept(srv_sd,(struct sockaddr *) &cl_addr, (socklen_t*)&len);
+       cl_address=inet_ntoa(cl_addr.sin_addr);
+       if(cl_sd==-1){
+         cout<<"Impossibile servire il Client "<<inet_ntoa(cl_addr.sin_addr)<<endl;
+       }
+       ret = pthread_create(&cl_s, 0, bd_cl , (void*)cl_sd);
+       if(ret != 0) {
+            printf("Impossibile creare un thread per gestire la richiesta del Client\n");
+            pthread_exit(NULL);
+        }
+       cout<<"il client "<<inet_ntoa(cl_addr.sin_addr)<<" si e' connesso ed gli e' associato l'id  "<<cl_sd<<endl;
+
+    }//fine while
+}
+
+void* bd_to_dfr(void* sk){
+  int socket = (size_t)sk, ret;
+  string comando, response="";
+  stringstream messaggio;
+  bool disconnect = false;
+
+  pthread_detach(pthread_self());
+
+  cout<<"FS client v.0.1\n\n";
+  cout<<"'?' o 'help' per la lista dei comandi\n\n";
+
+  messaggio<<CONNECT<<"|"<<ip_fs_srv<<"|"<<port_fs_srv<<"|"<<maxcl;
+  send_msg(socket, messaggio.str());
+  receive_msg(socket, response);
+
+  while(!disconnect){
+      comando="";
+      cout<<"fs> ";
+      getline(cin,comando);
+      console(comando, socket, disconnect);
+  }//fine while
+  close(socket);
+  cout<<"disconnessione dal DFR avvenuta"<<endl;
+  pthread_exit(NULL);
+}
+
+
+void console(string cmd, int sk, bool &exit){
+
+    string comando;
+    std::stringstream message;
+
+    comando = cut_str(cmd, " ");
+
+    if( comando == "")
+	return;
+    else if( comando == "register_file")
+        register_file(cmd, sk);
+    
+    else if( comando == "unregister_file")
+        unregister_file(cmd, sk);
+   
+    else if( comando == "disconnect"){
+            if( disconnect(sk) == true)
+                exit = true;
+    }
+    else if( comando == "help" | comando == "?")
+            show_help();
+    else {
+        cout<<"ERR: Comando non disponibile, digitare help o ? per avere la lista dei comandi possibili"<<endl;
+    }
+    return;
+}
+
+
+
+void register_file(string cmd, int socket){
+    std::stringstream message;
+    string file_name, response;
+    struct file_info f_info;
+    struct stat info;
+
+    message.str("");
+    file_name = cut_str(cmd, " ");
+    if(file_name == "register_file"){
+        cout<<"manca il nome del file, guardare l'help per la sintassi dei comandi"<<endl;
+        return;
+    }
+    if (stat(file_name.c_str(), &info) == -1){
+        cout<<"ERR: il file "<<file_name<<" non esiste"<<endl;
+        return;
+    }
+    message<<REGISTER_FILE<<"|"<<file_name;
+    send_msg(socket,message.str());
+    receive_msg(socket,response);
+    if( atoi(response.c_str()) != OK ){
+        cout<<"/n ERR: si e' verificato un errore durante la registrazione del file"<<endl;
+        return;
+    }
+    
+    //file exists ???
+
+    f_info.current_cl = 0;
+    f_info.max_cl = atoi( cut_str(cmd, " ").c_str());
+    list_file[file_name] = f_info;
+    cout<<"file "<<file_name<<" registrato"<<endl;
+    return;
+   
+}
+
+void unregister_file(string cmd, int socket){
+    std::stringstream message;
+    string file_name, response;
+    struct file_info f_info;
+
+    message.str("");
+    file_name = cut_str(cmd, " ");
+    if(file_name == "unregister_file"){
+        cout<<"manca il nome del file, guardare l'help per la sintassi dei comandi"<<endl;
+        return;
+    }
+    message<<UNREGISTER_FILE<<"|"<<file_name;
+    send_msg(socket,message.str());
+    receive_msg(socket, response);
+    
+    if( (atoi(response.c_str())) == ERR_FILE_NOT_REGISTERED )
+               cout<<"file "<<file_name<<" non era registrato presso il DFR"<<endl;
+    else{
+               list_file.erase(file_name);
+               cout<<"file "<<file_name<<" deregistrato"<<endl;
+    }
+}
+
+
+bool disconnect(int socket){
+    std::stringstream message;
+    string response;
+    message.str("");
+    
+    message<<DISCONNECT;
+    send_msg(socket, message.str());
+    receive_msg(socket, response);
+    if ( atoi(response.c_str()) != OK)
+        return false;
+    return true;
+
+}
+
+
+
+int main(int argc, char** argv) {
+ //VARIABILI
+  int ret,port_dfr;
+  int sk_dfr, sk_cl;
+  struct sockaddr_in srv_addr;
+  string ip_dfr ="";
+  pthread_t dfr_s,cl_s;
+
+  if (argc != 6){
+         cout<<"Errore, manca uno dei parametri, il comando correto e':\n";
+         cout<<"./FS <ip_DFR> <porta_DFR> <ip_FSR> <porta_FSR> <numero_massimo_client_accettabili>\n";
+         exit(1);
+  }
+
+
+  //convertiamo la porta da stringa a intero
+  port_dfr=atoi(argv[2]);
+  port_fs_srv = atoi(argv[4]);
+  if(port_dfr < 1024 || port_dfr > 65535){
+      cout<<"valore porta DFR non valida"<<endl;
+      exit(1);
+  }
+  if(port_fs_srv < 1024 || port_fs_srv > 65535){
+      cout<<"valore porta FS non valida"<<endl;
+      exit(1);
+  }
+
+  ip_fs_srv.assign(argv[3]);
+  ip_dfr.assign(argv[1]);
+  maxcl = atoi(argv[5]);
+
+  sk_dfr=init_sd_cl(ip_dfr, port_dfr);
+
+  if( sk_dfr == -1)
+       exit(1);
+
+  cout<<"Porta in ascolto per i client "<<port_fs_srv<<endl;
+  sk_cl = init_sd_srv("127.0.0.1", port_fs_srv);
+  if(sk_cl == -1)
+      exit(-1);
+
+  ret = pthread_create(&cl_s, 0, listener_cl , (void*)sk_cl);
+  ret = pthread_create(&dfr_s, 0, bd_to_dfr , (void*)sk_dfr);
+
+  pthread_join(dfr_s, 0);
+  close(sk_dfr);
+  close(sk_cl);
+  return (EXIT_SUCCESS);
+}
+

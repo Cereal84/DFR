@@ -1,0 +1,45 @@
+#!/bin/bash
+
+clear
+
+file_1 file_1.txt
+file_2 file_2.txt
+file_3 file_common.txt
+file_4 file_4.txt
+file_5 file_5.txt
+
+echo TEST 1
+echo
+
+echo inserisci la porta base
+read dfr_fs
+
+dfr_cl=$(($dfr_fs+1000))
+fs_cl=$(($dfr_fs+2000))
+
+
+./DFR/DFR $dfr_fs $dfr_cl &
+sleep 1
+
+
+./FS/FS 127.0.0.1 $dfr_fs 127.0.0.1 $fs_cl 10 file_1 2 file_2 2 file_3 2&
+./FS/FS 127.0.0.1 $dfr_fs 127.0.0.1 $fs_cl 10 file_3 2 file_4 2 file_5 2&
+
+sleep 1
+
+cd CL
+
+for i in `seq 1 10`;
+do
+    sleep 0.1 
+    ./CL 127.0.0.1 $dfr_cl 2 file.txt $i&
+done
+
+
+exit 0
+
+
+
+
+
+

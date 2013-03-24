@@ -1,0 +1,17 @@
+#include "../include/DFR_FS.h"
+
+
+extern Repository repository;
+
+int connect(string ip, int port, int num_maxcl){
+
+    repo.fs_list.add_fs(ip,port, num_maxcl);
+    return 0;
+
+}
+
+int 
+
+
+
+

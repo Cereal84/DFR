@@ -1,0 +1,2 @@
+
+g++ DFR.cpp ../src/comunication.cpp -o DFR

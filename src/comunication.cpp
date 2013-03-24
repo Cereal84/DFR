@@ -1,0 +1,38 @@
+#include "../include/comunication.h"
+#include <iostream>
+
+
+using namespace std;
+
+int send_msg(int sd, string msg){
+
+
+     int ret;
+     msg = msg + '\0';
+
+     ret=write(sd, msg.c_str(),msg.length());
+     if(ret< msg.length() ){
+         return -1;
+     }  
+     return 0;
+}
+
+int receive_msg(int sk, string &msg)
+{
+    
+    char c;
+    int ret;
+  
+    msg="";
+    while(1) {
+        ret = read(sk,(void *) &c, 1);
+        if( (ret == -1) || (ret == 0) ) 
+                return -1;
+        if(c == '\0') 
+                break;
+        msg = msg + c;
+
+    }
+
+    return 0;
+}

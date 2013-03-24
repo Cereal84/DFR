@@ -1,0 +1,97 @@
+#include <iostream>
+#include <string>
+#include <list>
+
+using namespace std;
+
+/// Contiene le informazioni riguardanti un File Server
+/**
+  * Contiene le seguenti informazioni di un File Server 
+  *      indirizzo ip
+  *      porta
+  *      numero massimo di cl accettati
+  *      numero di cl che stanno facendo una richiesta sul File Server
+  */
+class Fs{
+   public:
+     string ip;
+     int port;
+     int num_maxcl;
+     int num_cl;
+     list<string> files_registered;
+     Fs *next;
+
+   public:
+     /// Costruttore
+     /**
+       * Costruttore
+       * \param ip    indirizzo ip del File Server
+       * \param port  porta del File server
+       * \maxcl numero massimo di Client che accetta il File Server
+       */
+     Fs(string ip, int port, int maxcl );
+
+     /** aggiunge un file alla lista di file che il File Server ha registrato
+      *  \param file_name nome del file da aggiungere
+      */
+     void add_file(string file_name);
+   
+     /** rimuove un file alla lista di file registrati
+      *  \param file_name nome del file da rimuovere
+      */
+     void remove_file(string file_name);
+
+     /// Indica se il File Server può accettare o meno cl
+     /**
+       *
+       * \retun false se può servire ancora client true se ha raggiunto il massimo
+       */       
+     bool busy();
+};
+
+
+/// Contiene una lista di File Server con le loro informazioni
+/**
+  * Realizza una lista dove sono memorizzati i File Server, con le loro informazioni, registrati presso il 
+  * DFR (Distribuited File Repository).
+  * \see class Fs
+  */
+class Fs_list{
+   
+   Fs* first;
+   Fs* last;
+      
+   public:
+      /// Costruttore
+      /**
+       * Costruisce una lista vuota;
+       */
+      Fs_list();
+      
+      /** Aggiunge un File Server
+       * Aggiunge un File Server alla lista
+       * \param ip    indirizzo ip del File Server
+       * \param port  porta del File server
+       * \maxcl numero massimo di Client che accetta il File Server
+       */   
+      void add_fs(string ip, int port, int maxcl);
+
+      /** rimuove un file server
+       * Rimuove un dato File Server alla lista
+       * \param ip    indirizzo ip del File Server
+       * \param port  porta del File server
+       * \return -1 non ha trovato il FS, 0 FS eliminato
+       */   
+      int remove_fs(string ip, int port);
+
+      
+   private:
+
+      /** Cerca un dato File Server
+       * Cerca e restituisce un puntatore di un dato File Server nella lista
+       * \param ip    indirizzo ip del File Server
+       * \param port  porta del File server
+       * \return il puntatore alla classe File Server cercata se esiste altrimenti null
+       */   
+      Fs* search_fs(string ip, int port);    
+}; 

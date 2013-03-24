@@ -1,0 +1,43 @@
+#!/bin/bash
+
+clear
+
+echo TEST 1
+echo
+
+echo insert a port number
+read dfr_fs
+
+dfr_cl=$(($dfr_fs+1000))
+fs_cl=$(($dfr_fs+2000))
+fs2_cl=$(($dfr_fs+3000))
+
+./DFR/DFR $dfr_fs $dfr_cl &
+sleep 1
+
+
+./FS/FS 127.0.0.1 $dfr_fs 127.0.0.1 $fs_cl 5 file_1.txt 2 file_2.txt 2 file_common.txt 2&
+./FS/FS 127.0.0.1 $dfr_fs 127.0.0.1 $fs2_cl 5 file_common.txt 2 file_4.txt 2 file_5.txt 2&
+
+sleep 1
+
+cd CL
+
+for j in `seq 1 5`;
+do
+	for i in `seq 1 10`;
+	do
+    		sleep 0.1 
+    		./CL 127.0.0.1 $dfr_cl 1 file_common.txt $i&
+	done
+
+done
+
+
+exit 0
+
+
+
+
+
+

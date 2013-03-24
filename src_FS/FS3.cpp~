@@ -1,0 +1,128 @@
+/*
+ * File:   FS_2.cpp
+ * Author: Alessandro Pischedda
+ *
+ * Created on 19 marzo 2010, 18.45
+ */
+
+#include <stdlib.h>
+#include "../include/DFR_FS.h"
+#include "../include/comunication.h"
+#include "../include/utility.h"
+#include <iostream>
+#include <sstream>
+
+int port_fs_srv;
+int maxcl;
+string ip_fs_srv;
+
+void show_help(){
+    cout<<"\nHELP \n\n";
+    cout<<"-) connect \n";
+    cout<<"-) register_file <file_name> \n";
+    cout<<"-) unregister_file <file_name> \n";
+    cout<<"-) disconnect \n";
+    cout<<"-) quit\n\n";
+    return;
+}
+
+
+
+
+void bd_to_dfr(int socket){
+ // int socket = (size_t)sk;
+  string comando="",response="",id_comando;
+  stringstream messaggio;
+  bool disconnect = false;
+
+  cout<<"FS client v.0.1\n\n";
+  cout<<"'?' o 'help' per la lista dei comandi\n\n";
+
+  messaggio<<CONNECT<<"|"<<ip_fs_srv<<"|"<<port_fs_srv;
+  send_msg(socket, messaggio.str());
+  cout<<"inviato "<<messaggio.str()<<endl;
+  receive_msg(socket, response);
+  while(!disconnect){
+      messaggio.str("");
+      cout<<"fs> ";
+      cin>>comando;
+      id_comando =  cut_str(comando);
+
+      switch (atoi(id_comando.c_str()))  {
+
+            case REGISTER_FILE :{
+                string file_name;
+                file_name = cut_str(comando);
+                messaggio<<REGISTER_FILE<<"|"<<file_name;
+                send_msg(socket,messaggio.str());
+                receive_msg(socket,response);
+                cout<<"file "<<file_name<<" registrato"<<endl;
+                break;
+            }
+            case UNREGISTER_FILE :{
+                string file_name;
+                file_name = cut_str(comando);
+                messaggio<<UNREGISTER_FILE<<"|"<<file_name;
+                send_msg(socket,messaggio.str());
+                receive_msg(socket, response);
+                if( (atoi(response.c_str())) == ERR_FILE_NOT_REGISTERED )
+                    cout<<"file "<<file_name<<" non era registrato presso il DFR"<<endl;
+                else{
+                    cout<<"file "<<file_name<<" deregistrato"<<endl;
+                }
+                break;
+            }
+            case DISCONNECT :{
+                 messaggio<<DISCONNECT;
+                 send_msg(socket, messaggio.str());
+                 receive_msg(socket, response);
+                 disconnect=true;
+                break;
+            }
+        }//fine switch
+  }//fine while
+  close(socket);
+  cout<<"disconnessione dal DFR avvenuta"<<endl;
+}
+
+/*
+ *
+ */
+int main(int argc, char** argv) {
+ //VARIABILI
+  int ret,port_dfr;
+  int sk_dfr;
+  struct sockaddr_in srv_addr;
+  string ip_dfr ="";
+
+  if (argc != 6){
+         cout<<"Errore, manca uno dei parametri, il comando correto e':\n";
+         cout<<"./FS <ip_DFR> <porta_DFR> <ip_FSR> <porta_FSR> <numero_massimo_client_accettabili>\n";
+         exit(1);
+  }
+
+
+  //convertiamo la porta da stringa a intero
+  port_dfr=atoi(argv[2]);
+  port_fs_srv = atoi(argv[4]);
+  if(port_dfr < 1024 || port_dfr > 65535){
+      cout<<"valore porta DFR non valida"<<endl;
+      exit(1);
+  }
+  if(port_fs_srv < 1024 || port_fs_srv > 65535){
+      cout<<"valore porta FS non valida"<<endl;
+      exit(1);
+  }
+
+  ip_fs_srv.assign(argv[3]);
+  ip_dfr.assign(argv[1]);
+  maxcl = atoi(argv[5]);
+  sk_dfr=init_sd_cl(ip_dfr, port_dfr);
+  if( sk_dfr == -1)
+       exit(1);
+
+  //Se tutto � andato bene
+  cout<<"Connesso al DFR "<<argv[1]<<" sulla porta "<<port_dfr<<"\n";
+  bd_to_dfr(sk_dfr) ;
+  return (EXIT_SUCCESS);
+}

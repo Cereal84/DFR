@@ -1,0 +1,30 @@
+#!/bin/bash
+
+clear
+
+
+echo ---------TEST MENU-----------
+echo
+echo "1 - Test :"
+echo "2 - Test :"
+echo
+echo "scrivere il numero del test che si vuole eseguire :" 
+
+read option
+
+case $option in
+ 
+ "1") 
+  ./script/test1
+ ;;
+ "2") 
+  ./script/test2
+ ;;
+ *)
+   echo "Opzione non presente"
+ ;;
+
+
+esac
+
+exit 0
